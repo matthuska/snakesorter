@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+"""Sort the rule parameters in a snakemake file.
+
+The order is taken from the Snakemake grammar:
+
+input        = "input" ":" parameter_list
+output       = "output" ":" parameter_list
+params       = "params" ":" parameter_list
+log          = "log" ":" parameter_list
+benchmark    = "benchmark" ":" statement
+cache        = "cache" ":" bool
+message      = "message" ":" stringliteral
+threads      = "threads" ":" integer
+resources    = "resources" ":" parameter_list
+version      = "version" ":" statement
+conda        = "conda" ":" stringliteral
+container    = "container" ":" stringliteral
+run          = "run" ":" ni statement
+shell        = "shell" ":" stringliteral
+script       = "script" ":" stringliteral
+notebook     = "notebook" ":" stringliteral
+"""
+
+import collections
+import re
+
+ordering = [
+    "input",
+    "output",
+    "params",
+    "log",
+    "benchmark",
+    "cache",
+    "message",
+    "threads",
+    "resources",
+    "version",
+    "conda",
+    "container",
+    "run",
+    "shell",
+    "script",
+    "notebook",
+]
+
+
+def main():
+    example_code = """rule bwa_map:
+        shell:
+            "bwa mem {input} | samtools view -Sb - > {output}"
+        output:
+            "mapped_reads/A.bam"
+        input:
+            "data/genome.fa",
+            "data/samples/A.fastq"
+"""
+
+    print("=== Original code ===")
+    print(example_code)
+
+    sorted_code = sort_file(example_code)
+
+    print("=== Sorted code ===")
+    print(sorted_code)
+
+
+def flush_rule(rule, output):
+    if rule:
+        for param in ordering:
+            if param in rule:
+                output.append('\n'.join(rule[param]))
+        rule = collections.defaultdict(list)
+    return rule, output
+
+
+def sort_file(source):
+    outfile = []
+    rule = collections.defaultdict(list)
+    current_param = ''
+    in_rule = False
+    """Sort a snakemake source code file"""
+    for line in source.splitlines():
+        if re.match(r"\s*rule \w+:", line):
+            in_rule = True
+            # Flush existing rule if we have one
+            rule, outfile = flush_rule(rule, outfile)
+            # Write the current line to output
+            outfile.append(line)
+            continue
+        elif re.match("\\s*input:", line):
+            current_param = "input"
+        elif re.match("\\s*output:", line):
+            current_param = "output"
+        elif re.match("\\s*params:", line):
+            current_param = "params"
+        elif re.match("\\s*log:", line):
+            current_param = "log"
+        elif re.match("\\s*benchmark:", line):
+            current_param = "benchmark"
+        elif re.match("\\s*shell:", line):
+            current_param = "shell"
+        else:
+            pass
+
+        if in_rule:
+            rule[current_param].append(line)
+        else:
+            outfile.append(line)
+
+
+    # Flush existing rule when we reach the end of the file
+    rule, outfile = flush_rule(rule, outfile)
+    return '\n'.join(outfile)
+
+
+# Main body
+if __name__ == "__main__":
+    main()
