@@ -1,6 +1,6 @@
-# snakesorter - a Snakemake rule parameter sorter
+# snakesrt - a Snakemake rule parameter sorter
 
-_snakesorter_ sorts the rule parameters in Snakemake files to ensure that
+_snakesrt_ sorts the rule parameters in Snakemake files to ensure that
 parameters in all rules appear in the same order.
 
 *This software is not ready for use yet and will break your code*
