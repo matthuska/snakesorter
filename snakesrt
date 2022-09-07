@@ -46,7 +46,6 @@ rule_params = [
 @click.version_option(version="0.0.1")
 def main(src):
     files_to_sort = get_snakefiles(src)
-    print(files_to_sort)
     for src_file in files_to_sort:
         try:
             original_content = src_file.read_text()
@@ -69,7 +68,7 @@ def get_snakefiles(src):
         elif s.is_dir():
             files.extend(sorted(s.glob("**/*.smk")))
             files.extend(sorted(s.glob("**/Snakefile")))
-        elif s == "-":
+        elif str(s) == "-":
             files.append(sys.stdin)
         else:
             pass
