@@ -4,9 +4,11 @@
 import collections
 import re
 from pathlib import Path
+import sys
 
 import click
 
+# These are listed in order
 rule_params = [
     "input",
     "output",
@@ -43,10 +45,35 @@ rule_params = [
 )
 @click.version_option(version="0.0.1")
 def main(src):
-    for src_file in src:
-        original_content = src_file.read_text()
+    files_to_sort = get_snakefiles(src)
+    print(files_to_sort)
+    for src_file in files_to_sort:
+        try:
+            original_content = src_file.read_text()
+        except AttributeError:
+            original_content = src_file.read()
         sorted_code = sort_file(original_content)
         print(sorted_code)
+        # Not quite brave enough for this yet
+        # src_file.write_text(sorted_code)
+
+
+def get_snakefiles(src):
+    """Get all Snakefiles in src, and if src is a directory then return all
+    snakefiles below that directory recursively
+    """
+    files = []
+    for s in src:
+        if s.is_file():
+            files.append(s)
+        elif s.is_dir():
+            files.extend(sorted(s.glob("**/*.smk")))
+            files.extend(sorted(s.glob("**/Snakefile")))
+        elif s == "-":
+            files.append(sys.stdin)
+        else:
+            pass
+    return files
 
 
 def flush_rule(rule, output):
