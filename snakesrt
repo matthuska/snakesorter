@@ -1,30 +1,13 @@
 #!/usr/bin/env python
-"""Sort the rule parameters in a snakemake file.
-
-The order is taken from the Snakemake grammar:
-
-input        = "input" ":" parameter_list
-output       = "output" ":" parameter_list
-params       = "params" ":" parameter_list
-log          = "log" ":" parameter_list
-benchmark    = "benchmark" ":" statement
-cache        = "cache" ":" bool
-message      = "message" ":" stringliteral
-threads      = "threads" ":" integer
-resources    = "resources" ":" parameter_list
-version      = "version" ":" statement
-conda        = "conda" ":" stringliteral
-container    = "container" ":" stringliteral
-run          = "run" ":" ni statement
-shell        = "shell" ":" stringliteral
-script       = "script" ":" stringliteral
-notebook     = "notebook" ":" stringliteral
-"""
+"""Sort the rule parameters in a snakemake file."""
 
 import collections
 import re
+from pathlib import Path
 
-ordering = [
+import click
+
+rule_params = [
     "input",
     "output",
     "params",
@@ -44,31 +27,33 @@ ordering = [
 ]
 
 
-def main():
-    example_code = """rule bwa_map:
-        shell:
-            "bwa mem {input} | samtools view -Sb - > {output}"
-        output:
-            "mapped_reads/A.bam"
-        input:
-            "data/genome.fa",
-            "data/samples/A.fastq"
-"""
-
-    print("=== Original code ===")
-    print(example_code)
-
-    sorted_code = sort_file(example_code)
-
-    print("=== Sorted code ===")
-    print(sorted_code)
+@click.command(context_settings={"show_default": True})
+@click.argument(
+    "src",
+    nargs=-1,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        readable=True,
+        allow_dash=True,
+        path_type=Path,
+    ),
+    is_eager=True,
+)
+@click.version_option(version="0.0.1")
+def main(src):
+    for src_file in src:
+        original_content = src_file.read_text()
+        sorted_code = sort_file(original_content)
+        print(sorted_code)
 
 
 def flush_rule(rule, output):
     if rule:
-        for param in ordering:
+        for param in rule_params:
             if param in rule:
-                output.append('\n'.join(rule[param]))
+                output.append("\n".join(rule[param]))
         rule = collections.defaultdict(list)
     return rule, output
 
@@ -76,30 +61,24 @@ def flush_rule(rule, output):
 def sort_file(source):
     outfile = []
     rule = collections.defaultdict(list)
-    current_param = ''
+    current_param = ""
     in_rule = False
     """Sort a snakemake source code file"""
     for line in source.splitlines():
         if re.match(r"\s*rule \w+:", line):
+            # How do we know we're no longer in a rule?
             in_rule = True
             # Flush existing rule if we have one
             rule, outfile = flush_rule(rule, outfile)
-            # Write the current line to output
+            # Write the rule line to output since we don't save it
             outfile.append(line)
             continue
-        elif re.match("\\s*input:", line):
-            current_param = "input"
-        elif re.match("\\s*output:", line):
-            current_param = "output"
-        elif re.match("\\s*params:", line):
-            current_param = "params"
-        elif re.match("\\s*log:", line):
-            current_param = "log"
-        elif re.match("\\s*benchmark:", line):
-            current_param = "benchmark"
-        elif re.match("\\s*shell:", line):
-            current_param = "shell"
+        elif m := re.match(r"\s*(" + "|".join(rule_params) + "):", line):
+            current_param = m.group(1)
         else:
+            # This could either be more lines inside a rule/parameter, or we
+            # could be outside the rule. Need to figure out how to
+            # differentiate between these two situations (indentation?)
             pass
 
         if in_rule:
@@ -107,12 +86,10 @@ def sort_file(source):
         else:
             outfile.append(line)
 
-
     # Flush existing rule when we reach the end of the file
     rule, outfile = flush_rule(rule, outfile)
-    return '\n'.join(outfile)
+    return "\n".join(outfile)
 
 
-# Main body
 if __name__ == "__main__":
     main()
