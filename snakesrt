@@ -53,13 +53,10 @@ def main(src, overwrite):
         except AttributeError:
             original_content = src_file.read()
         sorted_code = sort_file(original_content)
-        if overwrite:
-            was_modified = (sorted_code != original_content)
-            print(src_file, was_modified)
-            # Not quite brave enough for this yet
-            # src_file.write_text(sorted_code)
-        else:
-            print(sorted_code)
+        was_modified = (sorted_code != original_content)
+        if overwrite and was_modified:
+            src_file.write_text(sorted_code)
+            print("sorted", src_file)
 
 
 def get_snakefiles(src):
@@ -119,7 +116,7 @@ def sort_file(source):
 
     # Flush existing rule when we reach the end of the file
     rule, outfile = flush_rule(rule, outfile)
-    return "\n".join(outfile)
+    return "\n".join(outfile) + "\n"
 
 
 if __name__ == "__main__":
