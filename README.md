@@ -23,6 +23,7 @@ Rule parameters are output in the following order:
 - shell
 - script
 - notebook
+- template_engine
 
 This ordering is taken from the [Snakemake syntax grammar](https://snakemake.readthedocs.io/en/stable/snakefiles/writing_snakefiles.html#grammar).
 
