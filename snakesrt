@@ -57,7 +57,9 @@ rule_params = [
     ),
     is_eager=True,
 )
-@click.option("--overwrite/--no-overwrite", default=False, help="Force overwriting input files")
+@click.option(
+    "--overwrite/--no-overwrite", default=False, help="Force overwriting input files"
+)
 @click.version_option(version="0.0.1")
 def main(src, overwrite):
     files_to_sort = get_snakefiles(src)
@@ -67,7 +69,7 @@ def main(src, overwrite):
         except AttributeError:
             original_content = src_file.read()
         sorted_code = sort_file(original_content)
-        was_modified = (sorted_code != original_content)
+        was_modified = sorted_code != original_content
         if overwrite and was_modified:
             src_file.write_text(sorted_code)
             print("sorted", src_file)
